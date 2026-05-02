@@ -1,0 +1,1189 @@
+:root {
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #162033;
+  background: #eef2f6;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.authShell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    linear-gradient(135deg, rgba(13, 148, 136, 0.2), rgba(37, 99, 235, 0.14)),
+    #eef2f6;
+}
+
+.authPanel {
+  width: min(440px, 100%);
+  background: #ffffff;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  padding: 28px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.14);
+}
+
+.brandMark,
+.iconButton {
+  display: inline-grid;
+  place-items: center;
+}
+
+.brandMark {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  color: #ffffff;
+  background: #0f766e;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+.authPanel h1 {
+  margin: 18px 0 8px;
+  font-size: 32px;
+}
+
+.authPanel p,
+.detailsPanel p,
+.chatHeader p {
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  margin: 22px 0;
+  background: #e8edf3;
+  border-radius: 8px;
+}
+
+.segmented button {
+  border: 0;
+  border-radius: 6px;
+  padding: 10px;
+  background: transparent;
+  color: #475569;
+}
+
+.segmented .active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
+}
+
+.authForm,
+.sidebar,
+.detailsPanel,
+.chatWindow {
+  display: flex;
+  flex-direction: column;
+}
+
+.authForm {
+  gap: 14px;
+}
+
+label {
+  display: grid;
+  gap: 7px;
+  color: #334155;
+  font-weight: 700;
+}
+
+input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 11px 12px;
+  background: #ffffff;
+  color: #0f172a;
+  outline: none;
+}
+
+input:focus {
+  border-color: #0f766e;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+}
+
+.primaryButton,
+.secondaryButton {
+  border: 0;
+  border-radius: 6px;
+  padding: 11px 14px;
+  font-weight: 800;
+}
+
+.primaryButton {
+  background: #0f766e;
+  color: #ffffff;
+}
+
+.secondaryButton {
+  background: #e8edf3;
+  color: #162033;
+}
+
+.notifyButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.dangerButton {
+  border: 0;
+  border-radius: 6px;
+  padding: 10px 14px;
+  background: #be123c;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.error {
+  margin: 0;
+  color: #be123c;
+}
+
+.appShell {
+  height: 100vh;
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr) 280px;
+  overflow: hidden;
+}
+
+.sidebar,
+.detailsPanel {
+  background: #f8fafc;
+  border-right: 1px solid #d8e0ea;
+  padding: 18px;
+  min-height: 0;
+}
+
+.detailsPanel {
+  border-left: 1px solid #d8e0ea;
+  border-right: 0;
+  gap: 18px;
+}
+
+.sidebarHeader,
+.chatHeader,
+.profileLine,
+.message {
+  display: flex;
+  align-items: center;
+}
+
+.sidebarHeader,
+.chatHeader {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 4px;
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.sidebar h2,
+.chatHeader h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.iconButton {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #334155;
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 18px 0 10px;
+  padding: 0 10px;
+  background: #ffffff;
+  border: 1px solid #d8e0ea;
+  border-radius: 6px;
+}
+
+.searchBox input {
+  border: 0;
+  padding-left: 0;
+  box-shadow: none;
+}
+
+.peopleResults {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.peopleResults button,
+.chatItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  padding: 10px;
+  background: #ffffff;
+  color: #162033;
+  text-align: left;
+}
+
+.chatList {
+  display: grid;
+  gap: 8px;
+  overflow: auto;
+  min-height: 0;
+  padding-right: 2px;
+}
+
+.chatItem.active {
+  background: #dff7f3;
+}
+
+.chatItem span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.chatItem strong,
+.chatItem small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chatItem small,
+.profileLine small {
+  color: #64748b;
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.46);
+}
+
+.modalPanel {
+  width: min(520px, 100%);
+  max-height: calc(100vh - 36px);
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px;
+  border-bottom: 1px solid #d8e0ea;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.modalHeader p,
+.muted {
+  margin: 4px 0 0;
+  color: #64748b;
+}
+
+.modalBody {
+  display: grid;
+  gap: 16px;
+  min-height: 0;
+  overflow: auto;
+  padding: 18px;
+}
+
+.profileHero {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.profileField {
+  display: grid;
+  gap: 4px;
+}
+
+.profileField span,
+.sharedGroup span {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.profileActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.profileActions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sharedGroups,
+.groupSettingsModal section {
+  display: grid;
+  gap: 10px;
+}
+
+.sharedGroups h3,
+.groupSettingsModal h3 {
+  margin: 0;
+}
+
+.sharedGroup {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid #d8e0ea;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.renameGroupForm {
+  display: flex;
+  gap: 8px;
+}
+
+.renameGroupForm input {
+  flex: 1;
+}
+
+.groupMemberActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 110px;
+  overflow: auto;
+}
+
+.groupMemberActions button {
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #ffffff;
+  padding: 6px 10px;
+  color: #334155;
+  font-size: 12px;
+}
+
+.groupMemberActions .selected {
+  border-color: #0f766e;
+  background: #ccfbf1;
+}
+
+.settingsMemberList {
+  display: grid;
+  gap: 8px;
+}
+
+.settingsMember {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #d8e0ea;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.settingsMember > span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.settingsMember strong,
+.settingsMember small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settingsMember small {
+  color: #64748b;
+}
+
+.memberAdminActions {
+  display: flex;
+  gap: 6px;
+}
+
+.memberAdminActions button {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #f8fafc;
+  padding: 6px 8px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.groupForm {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+}
+
+.modalSearch {
+  margin: 0;
+}
+
+.memberList {
+  display: grid;
+  gap: 8px;
+  max-height: 320px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.memberOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: 1px solid #d8e0ea;
+  border-radius: 6px;
+  padding: 10px;
+  background: #ffffff;
+  color: #162033;
+  font-weight: 400;
+}
+
+.memberOption.selected {
+  border-color: #0f766e;
+  background: #ecfdf5;
+}
+
+.memberOption input {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  accent-color: #0f766e;
+}
+
+.memberOption span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.memberOption strong,
+.memberOption small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memberOption small {
+  color: #64748b;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.chatWindow {
+  min-width: 0;
+  min-height: 0;
+  background: #ffffff;
+}
+
+.chatHeader {
+  padding: 18px 22px;
+  border-bottom: 1px solid #d8e0ea;
+}
+
+.chatHeader p {
+  margin: 4px 0 0;
+}
+
+.chatTitleButton,
+.senderNameButton,
+.avatarButton {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.chatTitleButton h2 {
+  margin: 0;
+}
+
+.senderNameButton {
+  color: #64748b;
+  font-weight: 800;
+}
+
+.callActions {
+  display: flex;
+  gap: 8px;
+}
+
+.messages {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.88)),
+    repeating-linear-gradient(45deg, #dbeafe 0 1px, transparent 1px 24px);
+}
+
+.message {
+  gap: 9px;
+  align-items: flex-end;
+  max-width: 78%;
+}
+
+.message.mine {
+  align-self: flex-end;
+}
+
+.messageContent {
+  position: relative;
+  display: grid;
+  gap: 4px;
+}
+
+.message small {
+  color: #64748b;
+  font-weight: 700;
+}
+
+.message p {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #eef2f6;
+  color: #162033;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.message.mine p {
+  background: #0f766e;
+  color: #ffffff;
+}
+
+.deletedMessage {
+  color: #64748b;
+  font-style: italic;
+}
+
+.editedLabel {
+  justify-self: start;
+  font-size: 11px;
+}
+
+.replyReference,
+.replyComposer {
+  border: 0;
+  border-left: 3px solid #0f766e;
+  border-radius: 6px;
+  background: #e8edf3;
+  color: #334155;
+  text-align: left;
+}
+
+.replyReference {
+  display: grid;
+  gap: 2px;
+  max-width: min(320px, 70vw);
+  padding: 7px 9px;
+}
+
+.replyReference span,
+.replyComposer span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.message.mine .replyReference {
+  background: #ccfbf1;
+}
+
+.messageActions,
+.reactionSummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.messageActions {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.message:hover .messageActions,
+.message:focus-within .messageActions {
+  opacity: 1;
+}
+
+.messageActions button,
+.reactionSummary button {
+  min-width: 28px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid #d8e0ea;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+}
+
+.reactionSummary button {
+  width: auto;
+  padding: 0 8px;
+  background: #f8fafc;
+}
+
+.editMessageForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: min(420px, 72vw);
+}
+
+.editMessageForm input {
+  flex: 1 0 180px;
+}
+
+.editMessageForm button {
+  padding: 9px 12px;
+}
+
+.attachments {
+  display: grid;
+  gap: 8px;
+}
+
+.imageAttachment,
+.fileAttachment {
+  overflow: hidden;
+  border-radius: 8px;
+  text-decoration: none;
+}
+
+.imageAttachment {
+  display: grid;
+  max-width: min(320px, 70vw);
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.imageAttachment img {
+  width: 100%;
+  max-height: 260px;
+  display: block;
+  object-fit: cover;
+}
+
+.imageAttachment span {
+  overflow: hidden;
+  padding: 7px 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.fileAttachment {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: min(280px, 70vw);
+  padding: 10px;
+  background: #eef2f6;
+  color: #162033;
+}
+
+.message.mine .fileAttachment {
+  background: #ccfbf1;
+}
+
+.fileAttachment span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.fileAttachment strong,
+.fileAttachment small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileAttachment small {
+  color: #64748b;
+}
+
+.composer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 16px 22px;
+  border-top: 1px solid #d8e0ea;
+}
+
+.replyComposer {
+  flex: 0 0 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+}
+
+.replyComposer button {
+  width: 26px;
+  height: 26px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 26px;
+  border: 0;
+  border-radius: 5px;
+  background: #d8e0ea;
+  color: #334155;
+}
+
+.composer > input:not(.fileInput) {
+  flex: 1;
+  min-width: 180px;
+}
+
+.fileInput {
+  display: none;
+}
+
+.attachmentPreviewBar,
+.attachmentError {
+  flex: 0 0 100%;
+}
+
+.attachmentPreviewBar {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.attachmentPreview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 220px;
+  flex: 0 0 auto;
+  padding: 7px;
+  border: 1px solid #d8e0ea;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.attachmentPreview img {
+  width: 34px;
+  height: 34px;
+  border-radius: 5px;
+  object-fit: cover;
+}
+
+.attachmentPreview span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.attachmentPreview button {
+  width: 24px;
+  height: 24px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 24px;
+  border: 0;
+  border-radius: 5px;
+  background: #e8edf3;
+  color: #334155;
+}
+
+.attachmentError {
+  margin: 0;
+  color: #be123c;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sendButton {
+  background: #0f766e;
+  color: #ffffff;
+  border-color: #0f766e;
+}
+
+.emptyState {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  min-height: 100vh;
+  padding: 28px;
+  text-align: center;
+  background: #ffffff;
+  color: #64748b;
+}
+
+.emptyState h2 {
+  color: #162033;
+  margin: 14px 0 6px;
+}
+
+.profileLine {
+  gap: 10px;
+}
+
+.profileLine div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.detailsPanel section {
+  border-top: 1px solid #d8e0ea;
+  padding-top: 18px;
+}
+
+.callToast {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 25;
+  display: grid;
+  gap: 12px;
+  width: min(380px, calc(100vw - 36px));
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
+}
+
+.incomingCallHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.incomingCallHeader div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.incomingCallHeader span {
+  overflow: hidden;
+  color: #64748b;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.callToastActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.callPanel {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 15;
+  width: min(520px, calc(100vw - 36px));
+  max-height: min(620px, calc(100vh - 36px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #0f172a;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.34);
+}
+
+.callPanel.maximized {
+  inset: 18px;
+  width: auto;
+  max-height: none;
+}
+
+.callPanel.minimized {
+  width: min(320px, calc(100vw - 36px));
+}
+
+.callPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.callPanelHeader div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.callPanelHeader span {
+  color: #cbd5e1;
+  font-size: 13px;
+}
+
+.callWindowActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.callIconButton {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.callIconButton.danger {
+  background: #be123c;
+  border-color: #be123c;
+}
+
+.videoGrid,
+.voiceCallBody {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.videoGrid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.callPanel.maximized .videoGrid {
+  flex: 1;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.voiceCallBody {
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+
+.videoTile,
+.waitingCall {
+  position: relative;
+  min-height: 150px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+.voiceCallBody .videoTile,
+.voiceCallBody .waitingCall {
+  min-height: 120px;
+}
+
+.videoTile video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cameraDisabled video {
+  opacity: 0;
+}
+
+.cameraDisabled > svg {
+  position: absolute;
+  color: #cbd5e1;
+}
+
+.videoTile span,
+.waitingCall span {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  max-width: calc(100% - 20px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.74);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.audioStream {
+  display: none;
+}
+
+.callControls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 12px 14px;
+}
+
+.callControl {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 112px;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.callControl.active {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.callControl.danger {
+  background: #be123c;
+  border-color: #be123c;
+}
+
+@media (max-width: 980px) {
+  .appShell {
+    grid-template-columns: 290px minmax(0, 1fr);
+  }
+
+  .detailsPanel {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .appShell {
+    height: auto;
+    min-height: 100vh;
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    min-height: 42vh;
+    max-height: 52vh;
+    border-right: 0;
+    border-bottom: 1px solid #d8e0ea;
+  }
+
+  .chatWindow {
+    min-height: 58vh;
+  }
+
+  .message {
+    max-width: 92%;
+  }
+}
