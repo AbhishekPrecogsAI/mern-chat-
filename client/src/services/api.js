@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = "https://mern-chat-khk0.onrender.com";
 
 export function getApiUrl() {
   return API_URL;
