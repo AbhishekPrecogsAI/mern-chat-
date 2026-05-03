@@ -24,7 +24,6 @@ import {
   Shield,
   Trash2,
   UserPlus,
-  Users,
   Video,
   VideoOff,
   X
@@ -758,13 +757,7 @@ function Sidebar({
           {chats.map((chat) => {
             const title = getChatTitle(chat, currentUser);
             const other = chat.members.find((member) => member._id !== currentUser.id);
-            const onlineCount = chat.members.filter((member) => onlineUserIds.has(member._id)).length;
-            const isOnline = chat.isGroup ? onlineCount > 1 : onlineUserIds.has(other?._id);
-            const statusText = chat.isGroup
-              ? `${onlineCount} online`
-              : isOnline
-                ? "Online"
-                : getLastSeenLabel(other);
+            const previewText = chat.lastMessage?.body || (chat.lastMessage?.attachments?.length ? "Attachment" : `${chat.members.length} member${chat.members.length === 1 ? "" : "s"}`);
 
             return (
               <button
@@ -772,15 +765,11 @@ function Sidebar({
                 className={selectedChat?._id === chat._id ? "chatItem active" : "chatItem"}
                 onClick={() => onSelect(chat)}
               >
-                <Avatar user={chat.isGroup ? null : other} title={title} />
+                <Avatar user={chat.isGroup ? chat : other} title={title} />
                 <span>
                   <strong>{title}</strong>
-                  <small>
-                    {statusText} ·{" "}
-                    {chat.lastMessage?.body || (chat.lastMessage?.attachments?.length ? "Attachment" : `${chat.members.length} member${chat.members.length === 1 ? "" : "s"}`)}
-                  </small>
+                  <small>{previewText}</small>
                 </span>
-                {chat.isGroup && <Users size={15} />}
               </button>
             );
           })}
@@ -1169,10 +1158,10 @@ function CallPanel({ call, onEnd }) {
   const [cameraOff, setCameraOff] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const [maximized, setMaximized] = useState(false);
-  const [isMobile, setIsMobile] = useState(() => window.matchMedia("(max-width: 720px)").matches);
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia("(max-width: 768px)").matches);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 720px)");
+    const mediaQuery = window.matchMedia("(max-width: 768px)");
     const handleChange = (event) => setIsMobile(event.matches);
 
     mediaQuery.addEventListener("change", handleChange);
@@ -1336,7 +1325,7 @@ function ChatApp({ currentUser, token, onLogout }) {
   const [notificationPermission, setNotificationPermission] = useState(() =>
     "Notification" in window ? Notification.permission : "unsupported"
   );
-  const [isMobile, setIsMobile] = useState(() => window.matchMedia("(max-width: 720px)").matches);
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia("(max-width: 768px)").matches);
   const activeCallRef = useRef(null);
   const hasSyncedCallSessionRef = useRef(false);
   const chatsRef = useRef([]);
@@ -1364,7 +1353,7 @@ function ChatApp({ currentUser, token, onLogout }) {
   }, [selectedChat]);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 720px)");
+    const mediaQuery = window.matchMedia("(max-width: 768px)");
     const handleChange = (event) => setIsMobile(event.matches);
 
     mediaQuery.addEventListener("change", handleChange);
@@ -1969,7 +1958,9 @@ function ChatApp({ currentUser, token, onLogout }) {
         onStartCall={startCall}
       />
 
-      {isMobile && mobileSidebarOpen && <div className="sidebarBackdrop" role="presentation" onClick={() => setMobileSidebarOpen(false)} />}
+      {isMobile && mobileSidebarOpen && (
+        <div className="sidebarBackdrop" role="presentation" onClick={() => setMobileSidebarOpen(false)} />
+      )}
 
       {activeCall && <CallPanel call={activeCall} onEnd={() => closeCall()} />}
 
