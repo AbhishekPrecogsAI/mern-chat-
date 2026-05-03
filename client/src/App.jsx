@@ -948,6 +948,23 @@ function CallPanel({ call, onEnd }) {
   const [cameraOff, setCameraOff] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const [maximized, setMaximized] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia("(max-width: 720px)").matches);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 720px)");
+    const handleChange = (event) => setIsMobile(event.matches);
+
+    mediaQuery.addEventListener("change", handleChange);
+    setIsMobile(mediaQuery.matches);
+
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (isMobile) {
+      setMaximized(true);
+    }
+  }, [isMobile]);
 
   function toggleMute() {
     const nextMuted = !muted;
@@ -965,7 +982,24 @@ function CallPanel({ call, onEnd }) {
     setCameraOff(nextCameraOff);
   }
 
-  const panelClass = ["callPanel", minimized ? "minimized" : "", maximized ? "maximized" : ""].filter(Boolean).join(" ");
+  function minimizeCall() {
+    setMaximized(false);
+    setMinimized(true);
+  }
+
+  function toggleMaximized() {
+    setMinimized(false);
+    setMaximized((current) => !current);
+  }
+
+  const panelClass = [
+    "callPanel",
+    minimized ? "minimized" : "",
+    maximized ? "maximized" : "",
+    isMobile ? "mobile" : ""
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div className={panelClass}>
@@ -976,15 +1010,23 @@ function CallPanel({ call, onEnd }) {
         </div>
         <div className="callWindowActions">
           {minimized ? (
-            <button className="callIconButton" type="button" title="Restore" onClick={() => setMinimized(false)}>
+            <button
+              className="callIconButton"
+              type="button"
+              title="Restore call"
+              onClick={() => {
+                setMinimized(false);
+                if (isMobile) setMaximized(true);
+              }}
+            >
               <Maximize2 size={16} />
             </button>
           ) : (
             <>
-              <button className="callIconButton" type="button" title="Minimize" onClick={() => setMinimized(true)}>
+              <button className="callIconButton" type="button" title="Minimize call" onClick={minimizeCall}>
                 <Minus size={16} />
               </button>
-              <button className="callIconButton" type="button" title={maximized ? "Restore" : "Maximize"} onClick={() => setMaximized(!maximized)}>
+              <button className="callIconButton" type="button" title={maximized ? "Restore size" : "Maximize call"} onClick={toggleMaximized}>
                 {maximized ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
               </button>
             </>
@@ -996,7 +1038,7 @@ function CallPanel({ call, onEnd }) {
       </header>
 
       {!minimized && (
-        <>
+        <div className="callPanelBody">
           <div className={call.mode === "video" ? "videoGrid" : "voiceCallBody"}>
             {call.mode === "video" && call.localStream && (
               <div className={cameraOff ? "videoTile localVideo cameraDisabled" : "videoTile localVideo"}>
@@ -1049,7 +1091,7 @@ function CallPanel({ call, onEnd }) {
               <span>End</span>
             </button>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

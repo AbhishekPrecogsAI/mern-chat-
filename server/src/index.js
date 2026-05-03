@@ -15,7 +15,7 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
-const allowedOrigins = (process.env.CLIENT_ORIGIN || "https://mern-chat-client-one.vercel.app")
+const allowedOrigins = (process.env.CLIENT_ORIGIN || "https://chat.abhi.best")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
