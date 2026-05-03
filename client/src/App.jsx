@@ -197,6 +197,19 @@ function getTypingLabel(chat, currentUser, typingUsers = []) {
   return `${names[0]}, ${names[1]} and ${names.length - 2} others are typing...`;
 }
 
+function getStoredCallSession() {
+  try {
+    const raw = localStorage.getItem("chat_call_session");
+    if (!raw) return null;
+
+    const session = JSON.parse(raw);
+    if (!session?.chatId || !session?.mode || !session?.userId) return null;
+    return session;
+  } catch {
+    return null;
+  }
+}
+
 function AuthView({ onAuth }) {
   const [mode, setMode] = useState("login");
   const [form, setForm] = useState({ name: "", email: "", password: "" });
@@ -1245,6 +1258,10 @@ function ChatApp({ currentUser, token, onLogout }) {
   const [messagesByChat, setMessagesByChat] = useState({});
   const [incomingCall, setIncomingCall] = useState(null);
   const [activeCall, setActiveCall] = useState(null);
+  const [resumeCallSession, setResumeCallSession] = useState(() => {
+    const session = getStoredCallSession();
+    return session?.userId === currentUser.id ? session : null;
+  });
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [typingUsersByChat, setTypingUsersByChat] = useState({});
   const [profileUser, setProfileUser] = useState(null);
@@ -1253,6 +1270,7 @@ function ChatApp({ currentUser, token, onLogout }) {
     "Notification" in window ? Notification.permission : "unsupported"
   );
   const activeCallRef = useRef(null);
+  const hasSyncedCallSessionRef = useRef(false);
   const chatsRef = useRef([]);
   const localStreamRef = useRef(null);
   const peerConnectionsRef = useRef(new Map());
@@ -1260,6 +1278,10 @@ function ChatApp({ currentUser, token, onLogout }) {
 
   const messages = useMemo(() => messagesByChat[selectedChat?._id] || [], [messagesByChat, selectedChat]);
   const onlineUserIds = useMemo(() => new Set(onlineUsers), [onlineUsers]);
+  const resumeCallChat = useMemo(
+    () => (resumeCallSession ? chats.find((item) => item._id === resumeCallSession.chatId) : null),
+    [chats, resumeCallSession]
+  );
 
   useEffect(() => {
     activeCallRef.current = activeCall;
@@ -1272,6 +1294,35 @@ function ChatApp({ currentUser, token, onLogout }) {
   useEffect(() => {
     selectedChatRef.current = selectedChat;
   }, [selectedChat]);
+
+  useEffect(() => {
+    if (resumeCallSession && chats.length > 0 && !resumeCallChat) {
+      setResumeCallSession(null);
+      localStorage.removeItem("chat_call_session");
+    }
+  }, [chats.length, resumeCallChat, resumeCallSession]);
+
+  useEffect(() => {
+    if (!hasSyncedCallSessionRef.current) {
+      hasSyncedCallSessionRef.current = true;
+      return;
+    }
+
+    if (activeCall?.chat?._id) {
+      localStorage.setItem(
+        "chat_call_session",
+        JSON.stringify({
+          chatId: activeCall.chat._id,
+          chatName: getChatTitle(activeCall.chat, currentUser),
+          mode: activeCall.mode,
+          userId: currentUser.id
+        })
+      );
+      return;
+    }
+
+    localStorage.removeItem("chat_call_session");
+  }, [activeCall, currentUser]);
 
   async function enableNotifications() {
     if (!("Notification" in window)) {
@@ -1347,6 +1398,35 @@ function ChatApp({ currentUser, token, onLogout }) {
     getSocket()?.emit(isTyping ? "typing:start" : "typing:stop", { chatId });
   }
 
+  async function connectToCall(chat, mode) {
+    closeCall(false);
+    const stream = await getCallStream(mode);
+    localStreamRef.current = stream;
+    const nextCall = { chat, currentUser, mode, status: "connecting", localStream: stream, remoteStreams: [] };
+    setSelectedChat(chat);
+    activeCallRef.current = nextCall;
+    setActiveCall(nextCall);
+    return nextCall;
+  }
+
+  async function joinCallSession(session) {
+    const chat = chats.find((item) => item._id === session.chatId);
+    if (!chat) {
+      alert("Saved call session could not be found.");
+      setResumeCallSession(null);
+      return;
+    }
+
+    try {
+      await connectToCall(chat, session.mode);
+      acceptCall(chat._id, session.mode);
+      setResumeCallSession(null);
+    } catch (err) {
+      alert(err.message || "Could not rejoin call");
+      closeCall(false);
+    }
+  }
+
   function updateRemoteStream(userId, stream) {
     const chat = activeCallRef.current?.chat || selectedChat;
     const member = chat?.members.find((item) => item._id === userId);
@@ -1369,7 +1449,11 @@ function ChatApp({ currentUser, token, onLogout }) {
 
   function createPeerConnection(userId, chatId) {
     const existing = peerConnectionsRef.current.get(userId);
-    if (existing) return existing;
+    if (existing && !["closed", "failed", "disconnected"].includes(existing.connectionState)) return existing;
+    if (existing) {
+      existing.close();
+      peerConnectionsRef.current.delete(userId);
+    }
 
     const peerConnection = new RTCPeerConnection({
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
@@ -1419,13 +1503,9 @@ function ChatApp({ currentUser, token, onLogout }) {
 
   async function startCall(chat, mode) {
     try {
-      closeCall(false);
-      const stream = await getCallStream(mode);
-      localStreamRef.current = stream;
-      const nextCall = { chat, currentUser, mode, status: "calling", localStream: stream, remoteStreams: [] };
-      setSelectedChat(chat);
-      activeCallRef.current = nextCall;
-      setActiveCall(nextCall);
+      const nextCall = await connectToCall(chat, mode);
+      setActiveCall({ ...nextCall, status: "calling" });
+      activeCallRef.current = { ...nextCall, status: "calling" };
       inviteCall(chat._id, mode);
     } catch (err) {
       alert(err.message || "Could not start call");
@@ -1437,20 +1517,7 @@ function ChatApp({ currentUser, token, onLogout }) {
 
     const chat = incomingCall.chat || chats.find((item) => item._id === incomingCall.chatId) || selectedChat;
     try {
-      closeCall(false);
-      const stream = await getCallStream(incomingCall.mode);
-      localStreamRef.current = stream;
-      const nextCall = {
-        chat,
-        currentUser,
-        mode: incomingCall.mode,
-        status: "connecting",
-        localStream: stream,
-        remoteStreams: []
-      };
-      setSelectedChat(chat);
-      activeCallRef.current = nextCall;
-      setActiveCall(nextCall);
+      await connectToCall(chat, incomingCall.mode);
       acceptCall(incomingCall.chatId, incomingCall.mode);
       setIncomingCall(null);
     } catch (err) {
@@ -1883,6 +1950,36 @@ function ChatApp({ currentUser, token, onLogout }) {
             </button>
             <button className="secondaryButton" type="button" onClick={rejectIncomingCall}>
               Reject
+            </button>
+          </div>
+        </div>
+      )}
+
+      {resumeCallSession && !activeCall && !incomingCall && (
+        <div className="callToast">
+          <div className="incomingCallHeader">
+            <div className="resumeCallIcon">
+              <Phone size={18} />
+            </div>
+            <div>
+              <strong>Rejoin call</strong>
+              <span>{resumeCallSession.chatName || "Previous call"} · {resumeCallSession.mode} call</span>
+            </div>
+          </div>
+          <p className="resumeCallText">Your last call session is still recoverable after refresh.</p>
+          <div className="callToastActions">
+            <button className="primaryButton" type="button" disabled={!resumeCallChat} onClick={() => joinCallSession(resumeCallSession)}>
+              Rejoin
+            </button>
+            <button
+              className="secondaryButton"
+              type="button"
+              onClick={() => {
+                setResumeCallSession(null);
+                localStorage.removeItem("chat_call_session");
+              }}
+            >
+              Dismiss
             </button>
           </div>
         </div>
