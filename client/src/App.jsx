@@ -295,10 +295,14 @@ function AuthView({ onAuth }) {
   );
 }
 
-function Avatar({ user, title }) {
+function Avatar({ user, title, className = "", showOnlineDot = false }) {
+  const classes = ["avatar", className].filter(Boolean).join(" ");
+  const isOnline = showOnlineDot;
+
   return (
-    <span className="avatar" style={{ background: user?.avatarColor || "#475569" }}>
+    <span className={classes} style={{ background: user?.avatarColor || "#475569" }}>
       {getInitials(user?.name || title)}
+      {isOnline && <span className="avatarStatusDot" aria-hidden="true" />}
     </span>
   );
 }
@@ -687,6 +691,10 @@ function Sidebar({
   selectedChat,
   currentUser,
   onlineUserIds,
+  notificationPermission,
+  onEnableNotifications,
+  onLogout,
+  onOpenProfile,
   onSelect,
   onCreateDirect,
   onCreateGroup,
@@ -712,70 +720,101 @@ function Sidebar({
 
   return (
     <aside className={mobileOpen ? "sidebar mobileOpen" : "sidebar"}>
-      <div className="sidebarHeader">
-        <div>
-          <span className="eyebrow">Workspace</span>
-          <h2>Chats</h2>
+      <div className="sidebarScroll">
+        <div className="sidebarHeader">
+          <div>
+            <span className="eyebrow">Workspace</span>
+            <h2>Chats</h2>
+          </div>
+          <div className="sidebarHeaderActions">
+            {onCloseMobile && (
+              <button className="iconButton mobileCloseButton" type="button" title="Close chats" onClick={onCloseMobile}>
+                <X size={18} />
+              </button>
+            )}
+            <button className="iconButton" title="New group" onClick={() => setShowCreateGroup(true)}>
+              <Plus size={18} />
+            </button>
+          </div>
         </div>
-        <div className="sidebarHeaderActions">
-          {onCloseMobile && (
-            <button className="iconButton mobileCloseButton" type="button" title="Close chats" onClick={onCloseMobile}>
-              <X size={18} />
+
+        <div className="searchBox">
+          <Search size={16} />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find people" />
+        </div>
+
+        {people.length > 0 && (
+          <div className="peopleResults">
+            {people.map((person) => (
+              <button key={person.id} onClick={() => onCreateDirect(person.id)}>
+                <Avatar user={person} />
+                <span>{person.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        <nav className="chatList">
+          {chats.map((chat) => {
+            const title = getChatTitle(chat, currentUser);
+            const other = chat.members.find((member) => member._id !== currentUser.id);
+            const onlineCount = chat.members.filter((member) => onlineUserIds.has(member._id)).length;
+            const isOnline = chat.isGroup ? onlineCount > 1 : onlineUserIds.has(other?._id);
+            const statusText = chat.isGroup
+              ? `${onlineCount} online`
+              : isOnline
+                ? "Online"
+                : getLastSeenLabel(other);
+
+            return (
+              <button
+                key={chat._id}
+                className={selectedChat?._id === chat._id ? "chatItem active" : "chatItem"}
+                onClick={() => onSelect(chat)}
+              >
+                <Avatar user={chat.isGroup ? null : other} title={title} />
+                <span>
+                  <strong>{title}</strong>
+                  <small>
+                    {statusText} ·{" "}
+                    {chat.lastMessage?.body || (chat.lastMessage?.attachments?.length ? "Attachment" : `${chat.members.length} member${chat.members.length === 1 ? "" : "s"}`)}
+                  </small>
+                </span>
+                {chat.isGroup && <Users size={15} />}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      <footer className="sidebarFooter">
+        <button className="accountCard" type="button" onClick={() => onOpenProfile(currentUser)}>
+          <Avatar user={currentUser} className="profileAvatar" showOnlineDot />
+          <span className="accountCardText">
+            <strong>{currentUser.name}</strong>
+            <small>{currentUser.email}</small>
+          </span>
+        </button>
+
+        <div className="sidebarFooterActions">
+          <button className="secondaryButton" type="button" onClick={() => onOpenProfile(currentUser)}>
+            Profile
+          </button>
+          {notificationPermission === "default" ? (
+            <button className="secondaryButton notifyButton" type="button" onClick={onEnableNotifications}>
+              <Bell size={16} />
+              Notifications
+            </button>
+          ) : (
+            <button className="secondaryButton" type="button" disabled>
+              {notificationPermission === "granted" ? "Notifications on" : "Notifications blocked"}
             </button>
           )}
-          <button className="iconButton" title="New group" onClick={() => setShowCreateGroup(true)}>
-            <Plus size={18} />
+          <button className="dangerButton" type="button" onClick={onLogout}>
+            Logout
           </button>
         </div>
-      </div>
-
-      <div className="searchBox">
-        <Search size={16} />
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find people" />
-      </div>
-
-      {people.length > 0 && (
-        <div className="peopleResults">
-          {people.map((person) => (
-            <button key={person.id} onClick={() => onCreateDirect(person.id)}>
-              <Avatar user={person} />
-              <span>{person.name}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      <nav className="chatList">
-        {chats.map((chat) => {
-          const title = getChatTitle(chat, currentUser);
-          const other = chat.members.find((member) => member._id !== currentUser.id);
-          const onlineCount = chat.members.filter((member) => onlineUserIds.has(member._id)).length;
-          const isOnline = chat.isGroup ? onlineCount > 1 : onlineUserIds.has(other?._id);
-          const statusText = chat.isGroup
-            ? `${onlineCount} online`
-            : isOnline
-              ? "Online"
-              : getLastSeenLabel(other);
-
-          return (
-            <button
-              key={chat._id}
-              className={selectedChat?._id === chat._id ? "chatItem active" : "chatItem"}
-              onClick={() => onSelect(chat)}
-            >
-              <Avatar user={chat.isGroup ? null : other} title={title} />
-              <span>
-                <strong>{title}</strong>
-                <small>
-                  {statusText} ·{" "}
-                  {chat.lastMessage?.body || (chat.lastMessage?.attachments?.length ? "Attachment" : `${chat.members.length} member${chat.members.length === 1 ? "" : "s"}`)}
-                </small>
-              </span>
-              {chat.isGroup && <Users size={15} />}
-            </button>
-          );
-        })}
-      </nav>
+      </footer>
 
       {showCreateGroup && (
         <CreateGroupModal
@@ -1897,6 +1936,10 @@ function ChatApp({ currentUser, token, onLogout }) {
         currentUser={currentUser}
         selectedChat={selectedChat}
         onlineUserIds={onlineUserIds}
+        notificationPermission={notificationPermission}
+        onEnableNotifications={enableNotifications}
+        onLogout={logout}
+        onOpenProfile={setProfileUser}
         onSelect={(chat) => {
           setSelectedChat(chat);
           if (isMobile) setMobileSidebarOpen(false);
@@ -1922,42 +1965,6 @@ function ChatApp({ currentUser, token, onLogout }) {
         onTypingChange={emitTyping}
         onStartCall={startCall}
       />
-      <aside className="detailsPanel">
-        <div className="profileLine">
-          <Avatar user={currentUser} />
-          <div>
-            <strong>{currentUser.name}</strong>
-            <small>{currentUser.email}</small>
-          </div>
-        </div>
-        <button className="secondaryButton" onClick={logout}>
-          Logout
-        </button>
-
-        <section>
-          <h3>Presence</h3>
-          <p>{onlineUsers.length} user{onlineUsers.length === 1 ? "" : "s"} online now.</p>
-        </section>
-
-        <section>
-          <h3>Notifications</h3>
-          <p>
-            {notificationPermission === "granted"
-              ? "Browser notifications are on."
-              : notificationPermission === "denied"
-                ? "Notifications are blocked in this browser."
-                : notificationPermission === "unsupported"
-                  ? "Notifications are not supported here."
-                  : "Enable alerts for messages and calls."}
-          </p>
-          {notificationPermission === "default" && (
-            <button className="secondaryButton notifyButton" type="button" onClick={enableNotifications}>
-              <Bell size={16} />
-              Enable
-            </button>
-          )}
-        </section>
-      </aside>
 
       {isMobile && mobileSidebarOpen && <div className="sidebarBackdrop" role="presentation" onClick={() => setMobileSidebarOpen(false)} />}
 

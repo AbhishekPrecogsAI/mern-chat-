@@ -199,7 +199,7 @@ input:focus {
 .appShell {
   height: 100vh;
   display: grid;
-  grid-template-columns: 320px minmax(0, 1fr) 280px;
+  grid-template-columns: 320px minmax(0, 1fr);
   overflow: hidden;
   background: rgba(255, 255, 255, 0.35);
 }
@@ -217,6 +217,19 @@ input:focus {
   border-left: 1px solid #d8e0ea;
   border-right: 0;
   gap: 18px;
+}
+
+.sidebar {
+  gap: 16px;
+  overflow: hidden;
+}
+
+.sidebarScroll {
+  display: grid;
+  gap: 16px;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 2px;
 }
 
 .sidebarHeader,
@@ -237,6 +250,70 @@ input:focus {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.sidebarFooter {
+  display: grid;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid #d8e0ea;
+}
+
+.accountCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d8e0ea;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #162033;
+  text-align: left;
+}
+
+.accountCardText {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.accountCardText strong,
+.accountCardText small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profileAvatar {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  border-radius: 9999px;
+  flex: 0 0 50px;
+}
+
+.avatarStatusDot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #ffffff;
+  border-radius: 9999px;
+  background: #22c55e;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.15);
+}
+
+.sidebarFooterActions {
+  display: grid;
+  gap: 8px;
+}
+
+.sidebarFooterActions .secondaryButton,
+.sidebarFooterActions .dangerButton {
+  width: 100%;
 }
 
 .eyebrow {
