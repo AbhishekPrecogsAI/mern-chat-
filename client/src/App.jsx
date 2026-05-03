@@ -20,6 +20,7 @@ import {
   Reply,
   Search,
   Send,
+  LogOut,
   Settings,
   Shield,
   Trash2,
@@ -786,24 +787,34 @@ function Sidebar({
         </button>
 
         <div className="sidebarFooterActions">
-          <button className="secondaryButton" type="button" onClick={() => setShowCreateGroup(true)}>
-            Create group
+          <button className="secondaryButton sidebarActionButton" type="button" onClick={() => setShowCreateGroup(true)} title="Create group" aria-label="Create group">
+            <Plus size={16} />
+            <span>Create</span>
           </button>
-          <button className="secondaryButton" type="button" onClick={() => onOpenProfile(currentUser)}>
-            Profile
+          <button className="secondaryButton sidebarActionButton" type="button" onClick={() => onOpenProfile(currentUser)} title="Settings" aria-label="Settings">
+            <Settings size={16} />
+            <span>Settings</span>
           </button>
           {notificationPermission === "default" ? (
-            <button className="secondaryButton notifyButton" type="button" onClick={onEnableNotifications}>
+            <button className="secondaryButton sidebarActionButton notifyButton" type="button" onClick={onEnableNotifications} title="Enable notifications" aria-label="Enable notifications">
               <Bell size={16} />
-              Notifications
+              <span>Notify</span>
             </button>
           ) : (
-            <button className="secondaryButton" type="button" disabled>
-              {notificationPermission === "granted" ? "Notifications on" : "Notifications blocked"}
+            <button
+              className="secondaryButton sidebarActionButton"
+              type="button"
+              disabled
+              title={notificationPermission === "granted" ? "Notifications on" : "Notifications blocked"}
+              aria-label={notificationPermission === "granted" ? "Notifications on" : "Notifications blocked"}
+            >
+              <Bell size={16} />
+              <span>{notificationPermission === "granted" ? "On" : "Blocked"}</span>
             </button>
           )}
-          <button className="dangerButton" type="button" onClick={onLogout}>
-            Logout
+          <button className="dangerButton sidebarActionButton" type="button" onClick={onLogout} title="Logout" aria-label="Logout">
+            <LogOut size={16} />
+            <span>Logout</span>
           </button>
         </div>
       </footer>

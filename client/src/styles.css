@@ -328,8 +328,15 @@ input:focus {
   width: 100%;
 }
 
-.sidebarFooterActions .notifyButton {
+.sidebarActionButton {
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
+  gap: 8px;
+}
+
+.sidebarActionButton span {
+  white-space: nowrap;
 }
 
 .eyebrow {
@@ -459,10 +466,13 @@ input:focus {
   flex: 0 0 38px;
   display: inline-grid;
   place-items: center;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
   border-radius: 9999px;
   color: #ffffff;
   font-size: 13px;
   font-weight: 900;
+  line-height: 1;
 }
 
 .modalBackdrop {
@@ -1576,8 +1586,8 @@ input:focus {
     position: fixed;
     inset: 0 auto 0 0;
     z-index: 24;
-    width: min(86vw, 330px);
-    max-width: 330px;
+    width: min(60vw, 320px);
+    max-width: 320px;
     height: 100dvh;
     transform: translateX(-105%);
     transition: transform 0.2s ease;
@@ -1663,6 +1673,11 @@ input:focus {
 
   .sidebarFooterActions {
     gap: 6px;
+  }
+
+  .sidebarActionButton {
+    min-height: 42px;
+    padding: 10px 12px;
   }
 
   .messages {
@@ -1827,8 +1842,8 @@ input:focus {
     position: fixed;
     inset: 0 auto 0 0;
     z-index: 24;
-    width: min(86vw, 330px);
-    max-width: 330px;
+    width: min(60vw, 320px);
+    max-width: 320px;
     height: 100dvh;
     transform: translateX(-105%);
     transition: transform 0.2s ease;
@@ -1914,6 +1929,11 @@ input:focus {
 
   .sidebarFooterActions {
     gap: 6px;
+  }
+
+  .sidebarActionButton {
+    min-height: 42px;
+    padding: 10px 12px;
   }
 
   .messages {
