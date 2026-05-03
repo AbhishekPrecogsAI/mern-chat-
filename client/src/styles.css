@@ -225,6 +225,7 @@ input:focus {
 }
 
 .sidebarScroll {
+  flex: 1 1 auto;
   display: grid;
   gap: 16px;
   min-height: 0;
@@ -253,9 +254,9 @@ input:focus {
 }
 
 .sidebarFooter {
+  flex-shrink: 0;
   display: grid;
   gap: 12px;
-  margin-top: auto;
   padding-top: 16px;
   border-top: 1px solid #d8e0ea;
 }
@@ -314,6 +315,10 @@ input:focus {
 .sidebarFooterActions .secondaryButton,
 .sidebarFooterActions .dangerButton {
   width: 100%;
+}
+
+.sidebarFooterActions .notifyButton {
+  justify-content: center;
 }
 
 .eyebrow {

@@ -797,6 +797,9 @@ function Sidebar({
         </button>
 
         <div className="sidebarFooterActions">
+          <button className="secondaryButton" type="button" onClick={() => setShowCreateGroup(true)}>
+            Create group
+          </button>
           <button className="secondaryButton" type="button" onClick={() => onOpenProfile(currentUser)}>
             Profile
           </button>
