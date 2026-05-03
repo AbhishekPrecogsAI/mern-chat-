@@ -23,6 +23,7 @@ const messageSchema = new mongoose.Schema(
       }
     ],
     kind: { type: String, enum: ["text", "system", "call"], default: "text" },
+    deliveredTo: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     readBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }]
   },
   { timestamps: true }

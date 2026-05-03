@@ -1,9 +1,12 @@
 import {
   Bell,
+  Check,
+  CheckCheck,
   Copy,
   Edit3,
   FileText,
   Image,
+  Clock3,
   Maximize2,
   MessageCircle,
   Mic,
@@ -28,7 +31,7 @@ import {
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./services/api";
 import { acceptCall, endCall, inviteCall, rejectCall, sendAnswer, sendIceCandidate, sendOffer } from "./services/calls";
-import { connectSocket, disconnectSocket, joinChat } from "./services/socket";
+import { connectSocket, disconnectSocket, getSocket, joinChat } from "./services/socket";
 
 function getChatTitle(chat, currentUser) {
   if (!chat) return "";
@@ -112,6 +115,86 @@ function groupReactions(reactions = []) {
 
     return [...groups, { emoji: reaction.emoji, count: 1 }];
   }, []);
+}
+
+function formatRelativeTime(value) {
+  if (!value) return "just now";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "just now";
+
+  const diff = date.getTime() - Date.now();
+  const absoluteSeconds = Math.max(1, Math.round(Math.abs(diff) / 1000));
+  const units = [
+    ["year", 60 * 60 * 24 * 365],
+    ["month", 60 * 60 * 24 * 30],
+    ["week", 60 * 60 * 24 * 7],
+    ["day", 60 * 60 * 24],
+    ["hour", 60 * 60],
+    ["minute", 60]
+  ];
+
+  for (const [unit, seconds] of units) {
+    if (absoluteSeconds >= seconds) {
+      const valueInUnits = Math.round(absoluteSeconds / seconds);
+      const formatter = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+      return formatter.format(diff < 0 ? -valueInUnits : valueInUnits, unit);
+    }
+  }
+
+  return diff < 0 ? "just now" : "in a moment";
+}
+
+function getLastSeenLabel(user) {
+  if (!user?.lastSeenAt) return "Offline";
+  return `Last seen ${formatRelativeTime(user.lastSeenAt)}`;
+}
+
+function getReceiptUserIds(values = []) {
+  return values
+    .map((value) => getUserId(value))
+    .filter(Boolean);
+}
+
+function getMessageReceipt(message, chat, currentUser) {
+  if (!message || getUserId(message.sender) !== currentUser.id) return null;
+
+  const otherMemberIds = (chat?.members || []).map((member) => member._id).filter((memberId) => memberId !== currentUser.id);
+  const readBy = new Set(getReceiptUserIds(message.readBy));
+  const deliveredTo = new Set(getReceiptUserIds(message.deliveredTo));
+  const readCount = otherMemberIds.filter((memberId) => readBy.has(memberId)).length;
+  const deliveredCount = otherMemberIds.filter((memberId) => deliveredTo.has(memberId)).length;
+
+  if (readCount > 0) {
+    return {
+      icon: CheckCheck,
+      label: chat?.isGroup && readCount < otherMemberIds.length ? `Read by ${readCount}` : "Read",
+      tone: "read"
+    };
+  }
+
+  if (deliveredCount > 0) {
+    return {
+      icon: Check,
+      label: chat?.isGroup && deliveredCount < otherMemberIds.length ? `Delivered to ${deliveredCount}` : "Delivered",
+      tone: "delivered"
+    };
+  }
+
+  return {
+    icon: Clock3,
+    label: "Sent",
+    tone: "sent"
+  };
+}
+
+function getTypingLabel(chat, currentUser, typingUsers = []) {
+  const names = typingUsers.filter((user) => getUserId(user) !== currentUser.id).map((user) => user.name).filter(Boolean);
+  if (names.length === 0) return "";
+  if (!chat?.isGroup) return `${names[0]} is typing...`;
+  if (names.length === 1) return `${names[0]} is typing...`;
+  if (names.length === 2) return `${names[0]} and ${names[1]} are typing...`;
+  return `${names[0]}, ${names[1]} and ${names.length - 2} others are typing...`;
 }
 
 function AuthView({ onAuth }) {
@@ -404,7 +487,7 @@ function UserProfileModal({ currentUser, onlineUserIds, user, onClose, onCreateD
             <Avatar user={profileUser} />
             <div>
               <h2>{profileUser.name}</h2>
-              <p>{online ? "Online" : "Offline"}</p>
+              <p>{online ? "Online" : getLastSeenLabel(profileUser)}</p>
             </div>
           </div>
           <button className="iconButton" type="button" title="Close" onClick={onClose}>
@@ -637,6 +720,11 @@ function Sidebar({ chats, selectedChat, currentUser, onlineUserIds, onSelect, on
           const other = chat.members.find((member) => member._id !== currentUser.id);
           const onlineCount = chat.members.filter((member) => onlineUserIds.has(member._id)).length;
           const isOnline = chat.isGroup ? onlineCount > 1 : onlineUserIds.has(other?._id);
+          const statusText = chat.isGroup
+            ? `${onlineCount} online`
+            : isOnline
+              ? "Online"
+              : getLastSeenLabel(other);
 
           return (
             <button
@@ -648,7 +736,7 @@ function Sidebar({ chats, selectedChat, currentUser, onlineUserIds, onSelect, on
               <span>
                 <strong>{title}</strong>
                 <small>
-                  {isOnline ? "Online" : "Offline"} ·{" "}
+                  {statusText} ·{" "}
                   {chat.lastMessage?.body || (chat.lastMessage?.attachments?.length ? "Attachment" : `${chat.members.length} member${chat.members.length === 1 ? "" : "s"}`)}
                 </small>
               </span>
@@ -674,12 +762,14 @@ function ChatWindow({
   currentUser,
   messages,
   onlineUserIds,
+  typingUsers,
   onDeleteMessage,
   onEditMessage,
   onOpenGroupSettings,
   onOpenProfile,
   onReactMessage,
   onSend,
+  onTypingChange,
   onStartCall
 }) {
   const [body, setBody] = useState("");
@@ -691,11 +781,23 @@ function ChatWindow({
   const [sending, setSending] = useState(false);
   const fileInputRef = useRef(null);
   const scrollRef = useRef(null);
+  const typingTimerRef = useRef(null);
+  const typingActiveRef = useRef(false);
   const title = getChatTitle(chat, currentUser);
+  const typingLabel = getTypingLabel(chat, currentUser, typingUsers);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  function stopTyping() {
+    clearTimeout(typingTimerRef.current);
+    if (!chat || !typingActiveRef.current) return;
+    typingActiveRef.current = false;
+    onTypingChange(chat._id, false);
+  }
+
+  useEffect(() => () => stopTyping(), [chat?._id]);
 
   if (!chat) {
     return (
@@ -734,12 +836,35 @@ function ChatWindow({
     setAttachments((current) => current.filter((_, itemIndex) => itemIndex !== index));
   }
 
+  function handleBodyChange(event) {
+    const nextValue = event.target.value;
+    setBody(nextValue);
+
+    if (!chat) return;
+
+    clearTimeout(typingTimerRef.current);
+    if (!nextValue.trim()) {
+      stopTyping();
+      return;
+    }
+
+    if (!typingActiveRef.current) {
+      typingActiveRef.current = true;
+      onTypingChange(chat._id, true);
+    }
+
+    typingTimerRef.current = setTimeout(() => {
+      stopTyping();
+    }, 1400);
+  }
+
   async function submit(event) {
     event.preventDefault();
     if (!body.trim() && attachments.length === 0) return;
 
     setSending(true);
     try {
+      stopTyping();
       await onSend(body, attachments, replyTo?._id);
       setBody("");
       setAttachments([]);
@@ -787,6 +912,7 @@ function ChatWindow({
             <h2>{title}</h2>
           </button>
           <p>{statusText}</p>
+          {typingLabel && <p className="typingIndicator">{typingLabel}</p>}
         </div>
         <div className="callActions">
           {chat.isGroup && (
@@ -850,6 +976,22 @@ function ChatWindow({
                         {reaction.emoji} {reaction.count}
                       </button>
                     ))}
+                  </div>
+                )}
+                {mine && !deleted && (
+                  <div className="messageReceipt">
+                    {(() => {
+                      const receipt = getMessageReceipt(message, chat, currentUser);
+                      if (!receipt) return null;
+                      const Icon = receipt.icon;
+
+                      return (
+                        <span className={`receiptChip ${receipt.tone}`}>
+                          <Icon size={12} />
+                          {receipt.label}
+                        </span>
+                      );
+                    })()}
                   </div>
                 )}
                 {!deleted && (
@@ -923,7 +1065,7 @@ function ChatWindow({
         <button className="iconButton" title="Attach files" type="button" onClick={() => fileInputRef.current?.click()}>
           <Image size={18} />
         </button>
-        <input value={body} onChange={(event) => setBody(event.target.value)} placeholder={`Message ${title}`} />
+        <input value={body} onChange={handleBodyChange} placeholder={`Message ${title}`} />
         <button className="iconButton sendButton" title="Send message" type="submit" disabled={sending}>
           <Send size={18} />
         </button>
@@ -1104,6 +1246,7 @@ function ChatApp({ currentUser, token, onLogout }) {
   const [incomingCall, setIncomingCall] = useState(null);
   const [activeCall, setActiveCall] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
+  const [typingUsersByChat, setTypingUsersByChat] = useState({});
   const [profileUser, setProfileUser] = useState(null);
   const [groupSettingsChat, setGroupSettingsChat] = useState(null);
   const [notificationPermission, setNotificationPermission] = useState(() =>
@@ -1145,6 +1288,63 @@ function ChatApp({ currentUser, token, onLogout }) {
       ...current,
       [message.chat]: (current[message.chat] || []).map((item) => (item._id === message._id ? message : item))
     }));
+  }
+
+  function updateMessagesByIds(chatId, messageIds, updater) {
+    const ids = new Set(messageIds);
+    setMessagesByChat((current) => ({
+      ...current,
+      [chatId]: (current[chatId] || []).map((message) => (ids.has(message._id) ? updater(message) : message))
+    }));
+  }
+
+  function updateReceiptList(list = [], userId) {
+    const next = getReceiptUserIds(list);
+    if (!next.includes(userId)) next.push(userId);
+    return next;
+  }
+
+  function handleMessageDelivered({ chatId, userId, messageIds = [] }) {
+    updateMessagesByIds(chatId, messageIds, (message) => ({
+      ...message,
+      deliveredTo: updateReceiptList(message.deliveredTo, userId)
+    }));
+  }
+
+  function handleMessageRead({ chatId, userId, messageIds = [] }) {
+    updateMessagesByIds(chatId, messageIds, (message) => ({
+      ...message,
+      deliveredTo: updateReceiptList(message.deliveredTo, userId),
+      readBy: updateReceiptList(message.readBy, userId)
+    }));
+  }
+
+  function handleTypingEvent(chatId, userId, isTyping) {
+    setTypingUsersByChat((current) => {
+      const existing = current[chatId] || [];
+      const member =
+        chatsRef.current.flatMap((chat) => chat.members || []).find((item) => getUserId(item) === userId) || { _id: userId };
+      const nextUsers = isTyping
+        ? existing.some((item) => getUserId(item) === userId)
+          ? existing
+          : [...existing, member]
+        : existing.filter((item) => getUserId(item) !== userId);
+
+      if (nextUsers.length === 0) {
+        const next = { ...current };
+        delete next[chatId];
+        return next;
+      }
+
+      return {
+        ...current,
+        [chatId]: nextUsers
+      };
+    });
+  }
+
+  function emitTyping(chatId, isTyping) {
+    getSocket()?.emit(isTyping ? "typing:start" : "typing:stop", { chatId });
   }
 
   function updateRemoteStream(userId, stream) {
@@ -1296,6 +1496,15 @@ function ChatApp({ currentUser, token, onLogout }) {
       }));
     });
     socket.on("message:updated", replaceMessage);
+    socket.on("message:delivered", handleMessageDelivered);
+    socket.on("message:read", handleMessageRead);
+
+    socket.on("typing:start", ({ chatId, userId }) => {
+      handleTypingEvent(chatId, userId, true);
+    });
+    socket.on("typing:stop", ({ chatId, userId }) => {
+      handleTypingEvent(chatId, userId, false);
+    });
 
     socket.on("chat:created", (chat) => {
       joinChat(chat._id);
@@ -1317,8 +1526,37 @@ function ChatApp({ currentUser, token, onLogout }) {
     socket.on("presence:user-online", ({ userId }) => {
       setOnlineUsers((current) => (current.includes(userId) ? current : [...current, userId]));
     });
-    socket.on("presence:user-offline", ({ userId }) => {
+    socket.on("presence:user-offline", ({ userId, lastSeenAt }) => {
       setOnlineUsers((current) => current.filter((item) => item !== userId));
+      setChats((current) =>
+        current.map((chat) => ({
+          ...chat,
+          members: chat.members.map((member) =>
+            getUserId(member) === userId ? { ...member, lastSeenAt } : member
+          )
+        }))
+      );
+      setSelectedChat((current) =>
+        current
+          ? {
+              ...current,
+              members: current.members.map((member) =>
+                getUserId(member) === userId ? { ...member, lastSeenAt } : member
+              )
+            }
+          : current
+      );
+      setGroupSettingsChat((current) =>
+        current
+          ? {
+              ...current,
+              members: current.members.map((member) =>
+                getUserId(member) === userId ? { ...member, lastSeenAt } : member
+              )
+            }
+          : current
+      );
+      setProfileUser((current) => (current && getUserId(current) === userId ? { ...current, lastSeenAt } : current));
     });
 
     socket.on("call:invite", (event) => {
@@ -1372,6 +1610,10 @@ function ChatApp({ currentUser, token, onLogout }) {
     return () => {
       socket.off("message:new");
       socket.off("message:updated");
+      socket.off("message:delivered");
+      socket.off("message:read");
+      socket.off("typing:start");
+      socket.off("typing:stop");
       socket.off("chat:created");
       socket.off("chat:updated");
       socket.off("chat:removed");
@@ -1398,6 +1640,29 @@ function ChatApp({ currentUser, token, onLogout }) {
 
     loadMessages();
   }, [selectedChat, messagesByChat]);
+
+  useEffect(() => {
+    function syncReadReceipts() {
+      if (!selectedChat || document.hidden || !document.hasFocus()) return;
+
+      const unreadMessageIds = messages
+        .filter((message) => getUserId(message.sender) !== currentUser.id)
+        .filter((message) => !getReceiptUserIds(message.readBy).includes(currentUser.id))
+        .map((message) => message._id);
+
+      if (unreadMessageIds.length === 0) return;
+      getSocket()?.emit("message:read", { chatId: selectedChat._id, messageIds: unreadMessageIds });
+    }
+
+    syncReadReceipts();
+    window.addEventListener("focus", syncReadReceipts);
+    document.addEventListener("visibilitychange", syncReadReceipts);
+
+    return () => {
+      window.removeEventListener("focus", syncReadReceipts);
+      document.removeEventListener("visibilitychange", syncReadReceipts);
+    };
+  }, [selectedChat, messages, currentUser.id]);
 
   async function createDirect(memberId) {
     const chat = await api("/api/chats/direct", {
@@ -1530,12 +1795,14 @@ function ChatApp({ currentUser, token, onLogout }) {
         currentUser={currentUser}
         messages={messages}
         onlineUserIds={onlineUserIds}
+        typingUsers={typingUsersByChat[selectedChat?._id] || []}
         onDeleteMessage={deleteMessage}
         onEditMessage={editMessage}
         onOpenGroupSettings={setGroupSettingsChat}
         onOpenProfile={setProfileUser}
         onReactMessage={reactMessage}
         onSend={sendMessage}
+        onTypingChange={emitTyping}
         onStartCall={startCall}
       />
       <aside className="detailsPanel">

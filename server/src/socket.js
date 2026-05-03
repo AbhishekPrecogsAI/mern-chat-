@@ -1,11 +1,53 @@
 import { Chat } from "./models/Chat.js";
+import { Message } from "./models/Message.js";
 import { User } from "./models/User.js";
 import { verifyToken } from "./utils/token.js";
 
 const onlineUsers = new Map();
 
-function getOnlineUserIds() {
+export function getOnlineUserIds() {
   return [...onlineUsers.keys()];
+}
+
+async function markMessagesDelivered(io, chatId, userId) {
+  const messages = await Message.find({
+    chat: chatId,
+    sender: { $ne: userId },
+    deliveredTo: { $ne: userId }
+  }).select("_id");
+
+  if (messages.length === 0) return;
+
+  const messageIds = messages.map((message) => message._id.toString());
+  await Message.updateMany({ _id: { $in: messageIds } }, { $addToSet: { deliveredTo: userId } });
+  io.to(chatId.toString()).emit("message:delivered", {
+    chatId: chatId.toString(),
+    userId,
+    messageIds
+  });
+}
+
+async function markMessagesRead(io, chatId, userId, messageIds = []) {
+  const messageFilter = {
+    chat: chatId,
+    sender: { $ne: userId },
+    readBy: { $ne: userId }
+  };
+
+  if (messageIds.length > 0) {
+    messageFilter._id = { $in: messageIds };
+  }
+
+  const messages = await Message.find(messageFilter).select("_id");
+  if (messages.length === 0) return;
+
+  const ids = messages.map((message) => message._id.toString());
+  await Message.updateMany({ _id: { $in: ids } }, { $addToSet: { readBy: userId, deliveredTo: userId } });
+  io.to(chatId.toString()).emit("message:read", {
+    chatId: chatId.toString(),
+    userId,
+    messageIds: ids
+  });
 }
 
 function relayToTargetOrChat(socket, eventName, chatId, toUserId, payload) {
@@ -45,11 +87,13 @@ export function registerSocketHandlers(io) {
 
     const chats = await Chat.find({ members: socket.user._id }).select("_id");
     chats.forEach((chat) => socket.join(chat._id.toString()));
+    await Promise.all(chats.map((chat) => markMessagesDelivered(io, chat._id, userId)));
 
     socket.on("chat:join", async (chatId, ack) => {
       const chat = await Chat.findOne({ _id: chatId, members: socket.user._id });
       if (!chat) return ack?.({ ok: false, message: "Chat not found" });
       socket.join(chatId);
+      await markMessagesDelivered(io, chatId, userId);
       ack?.({ ok: true });
     });
 
@@ -59,6 +103,12 @@ export function registerSocketHandlers(io) {
 
     socket.on("typing:stop", ({ chatId }) => {
       socket.to(chatId).emit("typing:stop", { chatId, userId: socket.user._id.toString() });
+    });
+
+    socket.on("message:read", async ({ chatId, messageIds = [] }) => {
+      const chat = await Chat.findOne({ _id: chatId, members: socket.user._id });
+      if (!chat) return;
+      await markMessagesRead(io, chatId, userId, messageIds);
     });
 
     socket.on("call:invite", async ({ chatId, mode }) => {
@@ -117,7 +167,9 @@ export function registerSocketHandlers(io) {
       }
 
       onlineUsers.delete(userId);
-      socket.broadcast.emit("presence:user-offline", { userId });
+      const now = new Date();
+      void User.findByIdAndUpdate(userId, { lastSeenAt: now });
+      socket.broadcast.emit("presence:user-offline", { userId, lastSeenAt: now.toISOString() });
     });
   });
 }

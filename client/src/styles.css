@@ -641,6 +641,13 @@ input:focus {
   margin: 4px 0 0;
 }
 
+.typingIndicator {
+  margin: 6px 0 0;
+  color: #0f766e;
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .chatTitleButton,
 .senderNameButton,
 .avatarButton {
@@ -699,6 +706,42 @@ input:focus {
 .message small {
   color: #64748b;
   font-weight: 700;
+}
+
+.messageReceipt {
+  display: flex;
+  justify-content: flex-end;
+  padding-right: 2px;
+}
+
+.receiptChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(248, 250, 252, 0.9);
+  border: 1px solid #d8e0ea;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.receiptChip.sent {
+  background: rgba(241, 245, 249, 0.95);
+}
+
+.receiptChip.delivered {
+  background: rgba(224, 231, 255, 0.55);
+  border-color: rgba(99, 102, 241, 0.18);
+  color: #4338ca;
+}
+
+.receiptChip.read {
+  background: rgba(209, 250, 229, 0.7);
+  border-color: rgba(16, 185, 129, 0.18);
+  color: #047857;
 }
 
 .message p {

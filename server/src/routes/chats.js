@@ -2,9 +2,10 @@ import express from "express";
 import { Chat } from "../models/Chat.js";
 import { Message } from "../models/Message.js";
 import { User } from "../models/User.js";
+import { getOnlineUserIds } from "../socket.js";
 
 const router = express.Router();
-const userSelect = "name email avatarColor";
+const userSelect = "name email avatarColor lastSeenAt";
 const maxAttachmentSize = 2 * 1024 * 1024;
 const maxAttachments = 4;
 
@@ -272,8 +273,19 @@ router.post("/:chatId/messages", async (req, res, next) => {
       body,
       attachments: normalizedAttachments,
       replyTo: replyTo || undefined,
+      deliveredTo: [req.user._id],
       readBy: [req.user._id]
     });
+
+    const onlineUserIds = new Set(getOnlineUserIds());
+    chat.members.forEach((memberId) => {
+      const member = memberId.toString();
+      if (member !== req.user._id.toString() && onlineUserIds.has(member)) {
+        message.deliveredTo.push(memberId);
+      }
+    });
+
+    await message.save();
 
     chat.lastMessage = message._id;
     await chat.save();

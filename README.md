@@ -37,3 +37,10 @@ npm run dev
 ## Voice/Video Readiness
 
 The app includes Socket.IO signaling events for WebRTC offers, answers, ICE candidates, call invites, rejections, and call end events. The frontend has a dedicated call service and UI-ready call action entry points, so a WebRTC media layer can be added without rewriting chat transport.
+
+## Realtime Features
+
+- Per-user typing indicators.
+- Delivered and read receipts for messages.
+- Presence with online state and last seen timestamps.
+- Live reactions, edits, deletes, and group updates with cleaner UI feedback.
