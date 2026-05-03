@@ -3,6 +3,12 @@ import { Chat } from "../models/Chat.js";
 import { Message } from "../models/Message.js";
 import { User } from "../models/User.js";
 import { getOnlineUserIds } from "../socket.js";
+import {
+  createDirectChatIfMissing,
+  getFriendshipStatus,
+  getUserPair,
+  syncLegacyDirectChatFriendship
+} from "../utils/friends.js";
 
 const router = express.Router();
 const userSelect = "name email avatarColor lastSeenAt";
@@ -83,18 +89,27 @@ router.post("/direct", async (req, res, next) => {
   try {
     const { memberId } = req.body;
     if (!memberId) return res.status(400).json({ message: "memberId is required" });
-
-    const members = [req.user._id.toString(), memberId].sort();
-    let chat = await Chat.findOne({ isGroup: false, members: { $all: members, $size: 2 } });
-
-    if (!chat) {
-      chat = await Chat.create({ isGroup: false, members });
-      const serialized = await serializeChat(chat);
-      members.forEach((memberId) => req.io.to(`user:${memberId}`).emit("chat:created", serialized));
-      return res.status(201).json(serialized);
+    if (memberId.toString() === req.user._id.toString()) {
+      return res.status(400).json({ message: "You cannot message yourself" });
     }
 
-    res.status(201).json(await serializeChat(chat));
+    const { userA, userB } = await getUserPair(req.user._id, memberId);
+    if (!userA || !userB) return res.status(404).json({ message: "User not found" });
+
+    await syncLegacyDirectChatFriendship(userA._id, userB._id);
+    const viewer = await User.findById(req.user._id);
+    const target = await User.findById(memberId);
+    const status = getFriendshipStatus(viewer, target);
+
+    if (status !== "friends") {
+      return res.status(403).json({ message: "Send a friend request first" });
+    }
+
+    const chat = await createDirectChatIfMissing(viewer._id, target._id);
+    const serialized = await serializeChat(chat);
+    req.io.to(`user:${viewer._id.toString()}`).emit("chat:created", serialized);
+    req.io.to(`user:${target._id.toString()}`).emit("chat:created", serialized);
+    res.status(201).json(serialized);
   } catch (error) {
     next(error);
   }
@@ -258,6 +273,16 @@ router.post("/:chatId/messages", async (req, res, next) => {
     const chat = await Chat.findOne({ _id: req.params.chatId, members: req.user._id });
 
     if (!chat) return res.status(404).json({ message: "Chat not found" });
+    if (!chat.isGroup) {
+      const otherMember = chat.members.find((member) => member.toString() !== req.user._id.toString());
+      if (otherMember) {
+        await syncLegacyDirectChatFriendship(req.user._id, otherMember);
+        const [viewer, target] = await Promise.all([User.findById(req.user._id), User.findById(otherMember)]);
+        if (getFriendshipStatus(viewer, target) !== "friends") {
+          return res.status(403).json({ message: "Send a friend request first" });
+        }
+      }
+    }
     if (!body?.trim() && normalizedAttachments.length === 0) {
       return res.status(400).json({ message: "Message body or attachment is required" });
     }

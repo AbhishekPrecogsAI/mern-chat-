@@ -465,7 +465,7 @@ function CreateGroupModal({ currentUser, onClose, onCreateGroup }) {
   );
 }
 
-function UserProfileModal({ currentUser, onlineUserIds, user, onClose, onCreateDirect, onStartCall }) {
+function UserProfileModal({ currentUser, onlineUserIds, user, refreshKey = 0, onClose, onCreateDirect, onStartCall }) {
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState("");
 
@@ -486,15 +486,62 @@ function UserProfileModal({ currentUser, onlineUserIds, user, onClose, onCreateD
     return () => {
       active = false;
     };
-  }, [user]);
+  }, [user, refreshKey]);
 
   const profileUser = profile?.user || user;
   const online = onlineUserIds.has(getUserId(profileUser));
+  const friendshipStatus = profile?.friendship?.status || "none";
+  const isSelf = getUserId(profileUser) === currentUser.id;
 
   async function startDirect(mode) {
     const chat = await onCreateDirect(getUserId(profileUser));
     onStartCall(chat, mode);
     onClose();
+  }
+
+  async function requestFriendship() {
+    setError("");
+    try {
+      const data = await api(`/api/users/${getUserId(profileUser)}/friend-request`, {
+        method: "POST"
+      });
+      setProfile((current) => ({
+        ...(current || {}),
+        ...data
+      }));
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function acceptFriendship() {
+    setError("");
+    try {
+      const data = await api(`/api/users/${getUserId(profileUser)}/friend-request/accept`, {
+        method: "POST"
+      });
+      setProfile((current) => ({
+        ...(current || {}),
+        ...data
+      }));
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function rejectFriendship() {
+    setError("");
+    try {
+      await api(`/api/users/${getUserId(profileUser)}/friend-request/reject`, {
+        method: "POST"
+      });
+      setProfile((current) => ({
+        ...(current || {}),
+        friendship: { status: "none" }
+      }));
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   return (
@@ -519,19 +566,48 @@ function UserProfileModal({ currentUser, onlineUserIds, user, onClose, onCreateD
             <span>Email</span>
             <strong>{profileUser.email}</strong>
           </div>
-          <div className="profileActions">
-            <button className="secondaryButton" type="button" onClick={() => onCreateDirect(getUserId(profileUser)).then(onClose)}>
-              Message
-            </button>
-            <button className="secondaryButton" type="button" onClick={() => startDirect("voice")}>
-              <Phone size={16} />
-              Voice
-            </button>
-            <button className="secondaryButton" type="button" onClick={() => startDirect("video")}>
-              <Video size={16} />
-              Video
-            </button>
-          </div>
+          {!isSelf && (
+            <div className="profileActions">
+              {friendshipStatus === "friends" && (
+                <>
+                  <button className="secondaryButton" type="button" onClick={() => onCreateDirect(getUserId(profileUser)).then(onClose)}>
+                    Message
+                  </button>
+                  <button className="secondaryButton" type="button" onClick={() => startDirect("voice")}>
+                    <Phone size={16} />
+                    Voice
+                  </button>
+                  <button className="secondaryButton" type="button" onClick={() => startDirect("video")}>
+                    <Video size={16} />
+                    Video
+                  </button>
+                </>
+              )}
+
+              {friendshipStatus === "none" && (
+                <button className="primaryButton" type="button" onClick={requestFriendship}>
+                  Send request
+                </button>
+              )}
+
+              {friendshipStatus === "outgoing" && (
+                <button className="secondaryButton" type="button" disabled>
+                  Request sent
+                </button>
+              )}
+
+              {friendshipStatus === "incoming" && (
+                <>
+                  <button className="primaryButton" type="button" onClick={acceptFriendship}>
+                    Accept request
+                  </button>
+                  <button className="secondaryButton" type="button" onClick={rejectFriendship}>
+                    Decline
+                  </button>
+                </>
+              )}
+            </div>
+          )}
           <section className="sharedGroups">
             <h3>Shared groups</h3>
             {(profile?.sharedGroups || []).length === 0 ? (
@@ -746,7 +822,7 @@ function Sidebar({
         {people.length > 0 && (
           <div className="peopleResults">
             {people.map((person) => (
-              <button key={person.id} onClick={() => onCreateDirect(person.id)}>
+              <button key={person.id} onClick={() => onOpenProfile(person)}>
                 <Avatar user={person} />
                 <span>{person.name}</span>
               </button>
@@ -1332,6 +1408,7 @@ function ChatApp({ currentUser, token, onLogout }) {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [typingUsersByChat, setTypingUsersByChat] = useState({});
   const [profileUser, setProfileUser] = useState(null);
+  const [profileRefreshKey, setProfileRefreshKey] = useState(0);
   const [groupSettingsChat, setGroupSettingsChat] = useState(null);
   const [notificationPermission, setNotificationPermission] = useState(() =>
     "Notification" in window ? Notification.permission : "unsupported"
@@ -1343,6 +1420,7 @@ function ChatApp({ currentUser, token, onLogout }) {
   const localStreamRef = useRef(null);
   const peerConnectionsRef = useRef(new Map());
   const selectedChatRef = useRef(null);
+  const profileUserRef = useRef(null);
 
   const messages = useMemo(() => messagesByChat[selectedChat?._id] || [], [messagesByChat, selectedChat]);
   const onlineUserIds = useMemo(() => new Set(onlineUsers), [onlineUsers]);
@@ -1362,6 +1440,10 @@ function ChatApp({ currentUser, token, onLogout }) {
   useEffect(() => {
     selectedChatRef.current = selectedChat;
   }, [selectedChat]);
+
+  useEffect(() => {
+    profileUserRef.current = profileUser;
+  }, [profileUser]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 768px)");
@@ -1735,6 +1817,22 @@ function ChatApp({ currentUser, token, onLogout }) {
     });
     socket.on("call:end", () => closeCall(false));
     socket.on("call:reject", () => setIncomingCall(null));
+    socket.on("friend:request", (event) => {
+      showBrowserNotification("Friend request", {
+        body: `${event.from?.name || "Someone"} sent you a request`,
+        tag: `friend:${event.userId}:${event.targetUserId}`
+      });
+      const openProfileId = getUserId(profileUserRef.current);
+      if (openProfileId === event.userId || openProfileId === event.targetUserId) {
+        setProfileRefreshKey((current) => current + 1);
+      }
+    });
+    socket.on("friend:updated", (event) => {
+      const openProfileId = getUserId(profileUserRef.current);
+      if (openProfileId === event.userId || openProfileId === event.targetUserId) {
+        setProfileRefreshKey((current) => current + 1);
+      }
+    });
     socket.on("webrtc:offer", async ({ chatId, offer, fromUserId }) => {
       const call = activeCallRef.current;
       if (!call || call.chat._id !== chatId || !fromUserId) return;
@@ -1777,6 +1875,8 @@ function ChatApp({ currentUser, token, onLogout }) {
       socket.off("call:accept");
       socket.off("call:end");
       socket.off("call:reject");
+      socket.off("friend:request");
+      socket.off("friend:updated");
       socket.off("webrtc:offer");
       socket.off("webrtc:answer");
       socket.off("webrtc:ice-candidate");
@@ -1980,6 +2080,7 @@ function ChatApp({ currentUser, token, onLogout }) {
           currentUser={currentUser}
           onlineUserIds={onlineUserIds}
           user={profileUser}
+          refreshKey={profileRefreshKey}
           onClose={() => setProfileUser(null)}
           onCreateDirect={createDirect}
           onStartCall={startCall}
