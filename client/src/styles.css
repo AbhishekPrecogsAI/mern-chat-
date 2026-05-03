@@ -233,6 +233,12 @@ input:focus {
   gap: 12px;
 }
 
+.sidebarHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .eyebrow {
   display: block;
   margin-bottom: 4px;
@@ -635,6 +641,14 @@ input:focus {
   border-bottom: 1px solid #d8e0ea;
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(10px);
+}
+
+.mobileMenuButton {
+  display: none;
+}
+
+.mobileCloseButton {
+  display: none;
 }
 
 .chatHeader p {
@@ -1310,6 +1324,73 @@ input:focus {
 }
 
 @media (max-width: 720px) {
+  .appShell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 24;
+    width: min(86vw, 330px);
+    max-width: 330px;
+    transform: translateX(-105%);
+    transition: transform 0.2s ease;
+    box-shadow: 24px 0 70px rgba(15, 23, 42, 0.2);
+  }
+
+  .sidebar.mobileOpen {
+    transform: translateX(0);
+  }
+
+  .sidebarBackdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 23;
+    background: rgba(15, 23, 42, 0.38);
+    backdrop-filter: blur(2px);
+  }
+
+  .chatWindow {
+    width: 100%;
+  }
+
+  .chatHeader {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    padding: 14px 16px;
+  }
+
+  .mobileMenuButton {
+    display: inline-grid;
+    margin-right: 10px;
+    flex: 0 0 40px;
+  }
+
+  .mobileCloseButton {
+    display: inline-grid;
+  }
+
+  .chatHeader > div:first-child {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .chatHeader p {
+    max-width: calc(100vw - 120px);
+  }
+
+  .chatTitleButton h2 {
+    font-size: 20px;
+  }
+
+  .detailsPanel {
+    display: none;
+  }
+
   .callToast {
     left: 8px;
     right: 8px;

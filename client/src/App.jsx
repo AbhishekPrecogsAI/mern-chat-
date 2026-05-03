@@ -13,6 +13,7 @@ import {
   MicOff,
   Minus,
   Minimize2,
+  Menu,
   Phone,
   PhoneOff,
   Plus,
@@ -681,7 +682,17 @@ function GroupSettingsModal({ chat, currentUser, onAddMembers, onClose, onLeave,
   );
 }
 
-function Sidebar({ chats, selectedChat, currentUser, onlineUserIds, onSelect, onCreateDirect, onCreateGroup }) {
+function Sidebar({
+  chats,
+  selectedChat,
+  currentUser,
+  onlineUserIds,
+  onSelect,
+  onCreateDirect,
+  onCreateGroup,
+  mobileOpen = false,
+  onCloseMobile
+}) {
   const [query, setQuery] = useState("");
   const [people, setPeople] = useState([]);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
@@ -700,15 +711,22 @@ function Sidebar({ chats, selectedChat, currentUser, onlineUserIds, onSelect, on
   }, [query]);
 
   return (
-    <aside className="sidebar">
+    <aside className={mobileOpen ? "sidebar mobileOpen" : "sidebar"}>
       <div className="sidebarHeader">
         <div>
           <span className="eyebrow">Workspace</span>
           <h2>Chats</h2>
         </div>
-        <button className="iconButton" title="New group" onClick={() => setShowCreateGroup(true)}>
-          <Plus size={18} />
-        </button>
+        <div className="sidebarHeaderActions">
+          {onCloseMobile && (
+            <button className="iconButton mobileCloseButton" type="button" title="Close chats" onClick={onCloseMobile}>
+              <X size={18} />
+            </button>
+          )}
+          <button className="iconButton" title="New group" onClick={() => setShowCreateGroup(true)}>
+            <Plus size={18} />
+          </button>
+        </div>
       </div>
 
       <div className="searchBox">
@@ -776,6 +794,7 @@ function ChatWindow({
   messages,
   onlineUserIds,
   typingUsers,
+  onMenuOpen,
   onDeleteMessage,
   onEditMessage,
   onOpenGroupSettings,
@@ -917,6 +936,11 @@ function ChatWindow({
     <section className="chatWindow">
       <header className="chatHeader">
         <div>
+          {onMenuOpen && (
+            <button className="iconButton mobileMenuButton" type="button" title="Open chats" onClick={onMenuOpen}>
+              <Menu size={18} />
+            </button>
+          )}
           <button
             className="chatTitleButton"
             type="button"
@@ -1262,6 +1286,7 @@ function ChatApp({ currentUser, token, onLogout }) {
     const session = getStoredCallSession();
     return session?.userId === currentUser.id ? session : null;
   });
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [typingUsersByChat, setTypingUsersByChat] = useState({});
   const [profileUser, setProfileUser] = useState(null);
@@ -1269,6 +1294,7 @@ function ChatApp({ currentUser, token, onLogout }) {
   const [notificationPermission, setNotificationPermission] = useState(() =>
     "Notification" in window ? Notification.permission : "unsupported"
   );
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia("(max-width: 720px)").matches);
   const activeCallRef = useRef(null);
   const hasSyncedCallSessionRef = useRef(false);
   const chatsRef = useRef([]);
@@ -1294,6 +1320,24 @@ function ChatApp({ currentUser, token, onLogout }) {
   useEffect(() => {
     selectedChatRef.current = selectedChat;
   }, [selectedChat]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 720px)");
+    const handleChange = (event) => setIsMobile(event.matches);
+
+    mediaQuery.addEventListener("change", handleChange);
+    setIsMobile(mediaQuery.matches);
+
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobile) setMobileSidebarOpen(false);
+  }, [isMobile]);
+
+  useEffect(() => {
+    if (selectedChat && isMobile) setMobileSidebarOpen(false);
+  }, [selectedChat, isMobile]);
 
   useEffect(() => {
     if (resumeCallSession && chats.length > 0 && !resumeCallChat) {
@@ -1853,9 +1897,14 @@ function ChatApp({ currentUser, token, onLogout }) {
         currentUser={currentUser}
         selectedChat={selectedChat}
         onlineUserIds={onlineUserIds}
-        onSelect={setSelectedChat}
+        onSelect={(chat) => {
+          setSelectedChat(chat);
+          if (isMobile) setMobileSidebarOpen(false);
+        }}
         onCreateDirect={createDirect}
         onCreateGroup={createGroup}
+        mobileOpen={mobileSidebarOpen}
+        onCloseMobile={() => setMobileSidebarOpen(false)}
       />
       <ChatWindow
         chat={selectedChat}
@@ -1863,6 +1912,7 @@ function ChatApp({ currentUser, token, onLogout }) {
         messages={messages}
         onlineUserIds={onlineUserIds}
         typingUsers={typingUsersByChat[selectedChat?._id] || []}
+        onMenuOpen={isMobile ? () => setMobileSidebarOpen(true) : null}
         onDeleteMessage={deleteMessage}
         onEditMessage={editMessage}
         onOpenGroupSettings={setGroupSettingsChat}
@@ -1908,6 +1958,8 @@ function ChatApp({ currentUser, token, onLogout }) {
           )}
         </section>
       </aside>
+
+      {isMobile && mobileSidebarOpen && <div className="sidebarBackdrop" role="presentation" onClick={() => setMobileSidebarOpen(false)} />}
 
       {activeCall && <CallPanel call={activeCall} onEnd={() => closeCall()} />}
 
