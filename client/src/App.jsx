@@ -798,20 +798,7 @@ function Sidebar({
     <aside className={mobileOpen ? "sidebar mobileOpen" : "sidebar"}>
       <div className="sidebarScroll">
         <div className="sidebarHeader">
-          <div>
-            <span className="eyebrow">Workspace</span>
-            <h2>Chats</h2>
-          </div>
-          <div className="sidebarHeaderActions">
-            {onCloseMobile && (
-              <button className="iconButton mobileCloseButton" type="button" title="Close chats" onClick={onCloseMobile}>
-                <X size={18} />
-              </button>
-            )}
-            <button className="iconButton" title="New group" onClick={() => setShowCreateGroup(true)}>
-              <Plus size={18} />
-            </button>
-          </div>
+          <h2 className="brandTitle">TECH ABHI</h2>
         </div>
 
         <div className="searchBox">
